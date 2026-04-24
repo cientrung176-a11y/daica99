@@ -6,6 +6,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 
 import { config } from './config.js';
+import { prisma } from './prisma.js';
 import authRoutes from './routes/auth.js';
 import deviceRoutes from './routes/devices.js';
 import computerRoutes from './routes/computers.js';
@@ -15,10 +16,16 @@ import exportRoutes from './routes/export.js';
 import dashboardRoutes from './routes/dashboard.js';
 import settingsRoutes from './routes/settings.js';
 
-const app = express();
-app.set('appName', config.appName);
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+  process.exit(1);
+});
 
-app.use(helmet());
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+  process.exit(1);
+});
+
 function isAllowedOrigin(origin: string | undefined): boolean {
   // undefined = server-to-server / curl; "null" = Electron file:// in production
   if (!origin || origin === 'null') return true;
@@ -29,44 +36,67 @@ function isAllowedOrigin(origin: string | undefined): boolean {
   return false;
 }
 
-app.use(
-  cors({
-    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
-    credentials: false,
-  }),
-);
-app.use(express.json({ limit: '5mb' }));
-app.use(morgan('dev'));
+async function main() {
+  console.log('Server starting...');
 
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ ok: true, name: config.appName });
-});
+  // Kết nối database trước khi khởi động server
+  try {
+    await prisma.$connect();
+    console.log('Database connected...');
+  } catch (err) {
+    console.error('[DB CONNECTION FAILED]', err);
+    process.exit(1);
+  }
 
-app.use('/api/auth', authRoutes);
-app.use('/api/devices', deviceRoutes);
-app.use('/api/computers', computerRoutes);
-app.use('/api/techlogs', techLogRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/export', exportRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/settings', settingsRoutes);
+  const app = express();
+  app.set('appName', config.appName);
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
-  },
-});
+  app.use(helmet());
+  app.use(
+    cors({
+      origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+      credentials: false,
+    }),
+  );
+  app.use(express.json({ limit: '5mb' }));
+  app.use(morgan('dev'));
 
-app.set('io', io);
-
-io.on('connection', (socket) => {
-  socket.on('join', (room: string) => {
-    socket.join(room);
+  app.get('/api/health', (_req: Request, res: Response) => {
+    res.json({ ok: true, name: config.appName });
   });
-});
 
-server.listen(config.port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`${config.appName} server đang chạy tại http://localhost:${config.port}`);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/devices', deviceRoutes);
+  app.use('/api/computers', computerRoutes);
+  app.use('/api/techlogs', techLogRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/export', exportRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
+  app.use('/api/settings', settingsRoutes);
+
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+    },
+  });
+
+  app.set('io', io);
+
+  io.on('connection', (socket) => {
+    socket.on('join', (room: string) => {
+      socket.join(room);
+    });
+  });
+
+  const PORT = Number(process.env.PORT) || 4000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Listening on port ${PORT}`);
+    console.log(`${config.appName} is ready at http://0.0.0.0:${PORT}`);
+  });
+}
+
+main().catch((err) => {
+  console.error('[STARTUP ERROR]', err);
+  process.exit(1);
 });
