@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../auth/middleware.js';
@@ -7,7 +7,7 @@ import { hashPassword, verifyPassword } from '../auth/password.js';
 const router = Router();
 
 // GET /api/users — Danh sách người dùng (Admin)
-router.get('/', requireAuth, requireRole(['ADMIN']), async (_req, res) => {
+router.get('/', requireAuth, requireRole(['ADMIN']), async (_req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     select: { id: true, username: true, fullName: true, role: true, isActive: true, createdAt: true },
     orderBy: { createdAt: 'asc' },
@@ -16,7 +16,7 @@ router.get('/', requireAuth, requireRole(['ADMIN']), async (_req, res) => {
 });
 
 // POST /api/users — Tạo tài khoản mới (Admin)
-router.post('/', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.post('/', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({
     username: z.string().min(3, 'Tên đăng nhập tối thiểu 3 ký tự.').max(32).regex(/^[a-z0-9_]+$/, 'Chỉ dùng chữ thường, số và dấu gạch dưới.'),
     password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự.'),
@@ -44,7 +44,7 @@ router.post('/', requireAuth, requireRole(['ADMIN']), async (req, res) => {
 });
 
 // PUT /api/users/:id — Cập nhật thông tin người dùng (Admin)
-router.put('/:id', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.put('/:id', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({
     fullName: z.string().min(1).optional(),
     role: z.enum(['ADMIN', 'TECH', 'VIEW']).optional(),
@@ -64,7 +64,7 @@ router.put('/:id', requireAuth, requireRole(['ADMIN']), async (req, res) => {
 });
 
 // PUT /api/users/:id/password — Đổi mật khẩu (Admin đổi của ai cũng được, user tự đổi của mình)
-router.put('/:id/password', requireAuth, async (req, res) => {
+router.put('/:id/password', requireAuth, async (req: Request, res: Response) => {
   const isAdmin = req.user!.role === 'ADMIN';
   const isSelf = req.user!.id === req.params.id;
 
@@ -97,7 +97,7 @@ router.put('/:id/password', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/users/:id — Vô hiệu hóa tài khoản (Admin)
-router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   if (req.user!.id === req.params.id) {
     return res.status(400).json({ message: 'Không thể xóa tài khoản của chính mình.' });
   }

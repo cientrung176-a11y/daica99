@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../auth/middleware.js';
 import { verifyAdminPin, changeAdminPin, checkPinRateLimit, recordPinFailure, resetPinAttempts } from '../lib/adminPin.js';
@@ -7,7 +7,7 @@ import { prisma } from '../prisma.js';
 const router = Router();
 
 // POST /api/settings/admin-pin/verify — Xác thực PIN (mọi user đã đăng nhập)
-router.post('/admin-pin/verify', requireAuth, async (req, res) => {
+router.post('/admin-pin/verify', requireAuth, async (req: Request, res: Response) => {
   const schema = z.object({ pin: z.string().min(1) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: 'PIN không được để trống.' });
@@ -43,7 +43,7 @@ router.post('/admin-pin/verify', requireAuth, async (req, res) => {
 });
 
 // PUT /api/settings/admin-pin — Đổi PIN (ADMIN only)
-router.put('/admin-pin', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.put('/admin-pin', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({
     currentPin: z.string().min(1),
     newPin: z.string().min(4, 'PIN tối thiểu 4 ký tự.').max(20),

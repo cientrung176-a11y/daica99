@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 
 import { prisma } from '../prisma.js';
 import { requireAuth } from '../auth/middleware.js';
 
 const router = Router();
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   // Đánh dấu máy offline nếu quá 90 giây không gửi heartbeat
   const threshold = new Date(Date.now() - 90_000);
   await prisma.computer.updateMany({

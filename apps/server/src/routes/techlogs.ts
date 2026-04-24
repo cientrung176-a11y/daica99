@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../auth/middleware.js';
@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from '../auth/middleware.js';
 const router = Router();
 
 // GET /api/techlogs
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   const q          = typeof req.query.q          === 'string' ? req.query.q          : '';
   const status     = typeof req.query.status     === 'string' ? req.query.status     : undefined;
   const deviceType = typeof req.query.deviceType === 'string' ? req.query.deviceType : undefined;
@@ -62,7 +62,7 @@ const techLogSchema = z.object({
 });
 
 // POST /api/techlogs
-router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const parsed = techLogSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.errors[0]?.message || 'Dữ liệu không hợp lệ.';
@@ -99,7 +99,7 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) =
 });
 
 // PUT /api/techlogs/:id
-router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const parsed = techLogSchema.safeParse(req.body);
   if (!parsed.success) {
     const msg = parsed.error.errors[0]?.message || 'Dữ liệu không hợp lệ.';
@@ -136,7 +136,7 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res)
 });
 
 // DELETE /api/techlogs/:id
-router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   await prisma.techLog.delete({ where: { id: req.params.id } });
   req.app.get('io')?.to('techlogs').emit('techlogs:changed', { type: 'deleted', id: req.params.id });
   return res.json({ ok: true });

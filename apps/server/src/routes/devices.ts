@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
 import { prisma } from '../prisma.js';
@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from '../auth/middleware.js';
 
 const router = Router();
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   const q = typeof req.query.q === 'string' ? req.query.q : '';
   const status = typeof req.query.status === 'string' ? req.query.status : undefined;
 
@@ -32,7 +32,7 @@ router.get('/', requireAuth, async (req, res) => {
   return res.json({ items });
 });
 
-router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const schema = z.object({
     name: z.string().min(1),
     type: z.string().min(1),
@@ -75,7 +75,7 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) =
   return res.status(201).json({ item: created });
 });
 
-router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const schema = z.object({
     name: z.string().min(1),
     type: z.string().min(1),
@@ -119,7 +119,7 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res)
   return res.json({ item: updated });
 });
 
-router.delete('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   await prisma.device.delete({ where: { id: req.params.id } });
   req.app.get('io')?.to('devices').emit('devices:changed', { type: 'deleted', id: req.params.id });
   return res.json({ ok: true });

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -38,7 +38,7 @@ app.use(
 app.use(express.json({ limit: '5mb' }));
 app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ ok: true, name: config.appName });
 });
 

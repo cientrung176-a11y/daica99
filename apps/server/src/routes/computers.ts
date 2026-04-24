@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../auth/middleware.js';
@@ -17,7 +17,7 @@ async function markOfflineStale() {
 }
 
 // GET /api/computers — Lấy danh sách máy tính
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   await markOfflineStale();
   const q = typeof req.query.q === 'string' ? req.query.q : '';
   const where: any = q
@@ -60,7 +60,7 @@ const computerSchema = z.object({
 });
 
 // POST /api/computers — Thêm máy tính mới
-router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const parsed = computerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: 'Dữ liệu không hợp lệ.' });
 
@@ -70,7 +70,7 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) =
 });
 
 // PUT /api/computers/:id — Cập nhật máy tính
-router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res) => {
+router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Request, res: Response) => {
   const parsed = computerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: 'Dữ liệu không hợp lệ.' });
 
@@ -80,14 +80,14 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req, res)
 });
 
 // DELETE /api/computers/:id — Xóa máy tính
-router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   await prisma.computer.delete({ where: { id: req.params.id } });
   req.app.get('io')?.to('computers').emit('computers:changed', { type: 'deleted', id: req.params.id });
   return res.json({ ok: true });
 });
 
 // POST /api/computers/:id/rustdesk/reveal — Xem thông tin RustDesk (ADMIN, cần PIN)
-router.post('/:id/rustdesk/reveal', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.post('/:id/rustdesk/reveal', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({ pin: z.string().min(1) });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: 'PIN không được để trống.' });
@@ -143,7 +143,7 @@ router.post('/:id/rustdesk/reveal', requireAuth, requireRole(['ADMIN']), async (
 });
 
 // PUT /api/computers/:id/rustdesk — Lưu thông tin RustDesk (ADMIN only)
-router.put('/:id/rustdesk', requireAuth, requireRole(['ADMIN']), async (req, res) => {
+router.put('/:id/rustdesk', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({
     rustdeskId: z.string().optional().nullable(),
     rustdeskPassword: z.string().optional().nullable(),
@@ -164,7 +164,7 @@ router.put('/:id/rustdesk', requireAuth, requireRole(['ADMIN']), async (req, res
 });
 
 // POST /api/computers/heartbeat — Agent gửi heartbeat (không cần đăng nhập, dùng machineId)
-router.post('/heartbeat', async (req, res) => {
+router.post('/heartbeat', async (req: Request, res: Response) => {
   const schema = z.object({
     machineId: z.string().min(1),
     hostname: z.string().min(1),

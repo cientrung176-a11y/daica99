@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import ExcelJS from 'exceljs';
 import { prisma } from '../prisma.js';
 import { requireAuth } from '../auth/middleware.js';
@@ -13,7 +13,7 @@ const statusLogMap: Record<string, string> = {
 };
 
 // GET /api/export/devices — Xuất danh sách thiết bị ra Excel
-router.get('/devices', requireAuth, async (_req, res) => {
+router.get('/devices', requireAuth, async (_req: Request, res: Response) => {
   const devices = await prisma.device.findMany({ orderBy: { name: 'asc' } });
 
   const wb = new ExcelJS.Workbook();
@@ -126,7 +126,7 @@ function addLogSheet(wb: ExcelJS.Workbook, sheetName: string, logs: any[], heade
 }
 
 // GET /api/export/techlogs — Xuất nhật ký kỹ thuật ra Excel (tách sheet theo loại thiết bị)
-router.get('/techlogs', requireAuth, async (_req, res) => {
+router.get('/techlogs', requireAuth, async (_req: Request, res: Response) => {
   const logs = await prisma.techLog.findMany({
     orderBy: [{ deviceType: 'asc' }, { happenedAt: 'desc' }],
     include: {
@@ -170,7 +170,7 @@ router.get('/techlogs', requireAuth, async (_req, res) => {
 });
 
 // GET /api/export/computers — Xuất danh sách máy tính
-router.get('/computers', requireAuth, async (_req, res) => {
+router.get('/computers', requireAuth, async (_req: Request, res: Response) => {
   const computers = await prisma.computer.findMany({ orderBy: { name: 'asc' } });
 
   const wb = new ExcelJS.Workbook();
