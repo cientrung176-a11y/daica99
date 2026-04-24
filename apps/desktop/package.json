@@ -6,6 +6,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=1 electron .\"",
+    "prebuild": "node scripts/gen-icon.cjs",
     "build": "vite build && electron-builder --win",
     "release": "vite build && electron-builder --win --publish always",
     "preview": "vite preview"
@@ -28,7 +29,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",
     "cross-env": "^7.0.3",
-    "electron": "^32.1.0",
+    "electron": "32.3.3",
     "electron-builder": "^25.0.5",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.12",
@@ -46,7 +47,6 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["vi"],
       "shortcutName": "ĐẠI CA 99 BẮC NINH",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
@@ -55,7 +55,8 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "public/icon.png"
     ],
     "directories": {
       "output": "release"
