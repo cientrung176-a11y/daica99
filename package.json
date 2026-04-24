@@ -11,5 +11,12 @@
     "build": "npm run build -w @dai-ca/server && npm run build -w @dai-ca/desktop",
     "build:desktop": "npm run build -w @dai-ca/desktop",
     "build:server": "npm run build -w @dai-ca/server"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.6.0"
   }
 }
