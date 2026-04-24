@@ -1,0 +1,72 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import http from 'http';
+import { Server } from 'socket.io';
+
+import { config } from './config.js';
+import authRoutes from './routes/auth.js';
+import deviceRoutes from './routes/devices.js';
+import computerRoutes from './routes/computers.js';
+import techLogRoutes from './routes/techlogs.js';
+import userRoutes from './routes/users.js';
+import exportRoutes from './routes/export.js';
+import dashboardRoutes from './routes/dashboard.js';
+import settingsRoutes from './routes/settings.js';
+
+const app = express();
+app.set('appName', config.appName);
+
+app.use(helmet());
+function isAllowedOrigin(origin: string | undefined): boolean {
+  // undefined = server-to-server / curl; "null" = Electron file:// in production
+  if (!origin || origin === 'null') return true;
+  if (origin === config.clientOrigin) return true;
+  // Cho phép mọi localhost / 127.0.0.1 ở bất kỳ port nào (dev environment)
+  if (origin.startsWith('http://localhost:') || origin === 'http://localhost') return true;
+  if (origin.startsWith('http://127.0.0.1:') || origin === 'http://127.0.0.1') return true;
+  return false;
+}
+
+app.use(
+  cors({
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+    credentials: false,
+  }),
+);
+app.use(express.json({ limit: '5mb' }));
+app.use(morgan('dev'));
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, name: config.appName });
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/devices', deviceRoutes);
+app.use('/api/computers', computerRoutes);
+app.use('/api/techlogs', techLogRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/export', exportRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/settings', settingsRoutes);
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  socket.on('join', (room: string) => {
+    socket.join(room);
+  });
+});
+
+server.listen(config.port, () => {
+  // eslint-disable-next-line no-console
+  console.log(`${config.appName} server đang chạy tại http://localhost:${config.port}`);
+});

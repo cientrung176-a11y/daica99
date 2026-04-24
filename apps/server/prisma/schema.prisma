@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TECH
+  VIEW
+}
+
+enum DeviceStatus {
+  TOT
+  LOI
+  CANH_BAO
+  BAO_TRI
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole @default(TECH)
+  isActive     Boolean  @default(true)
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  techLogs      TechLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String
+  revokedAt    DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Device {
+  id           String       @id @default(cuid())
+  name         String
+  type         String
+  brand        String?
+  model        String?
+  serial       String?
+  department   String?
+  owner        String?
+  purchaseDate DateTime?
+  warrantyUntil DateTime?
+  status       DeviceStatus @default(TOT)
+  note         String?
+  imageUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Computer {
+  id           String   @id @default(cuid())
+  machineId    String?  @unique
+  name         String
+  ipInternal   String?
+  ipPublic     String?
+  mac          String?
+  location     String?
+  currentUser  String?
+  windows      String?
+  cpu          String?
+  ram          String?
+  disk         String?
+  department   String?
+  anyDeskId    String?
+  rustDeskId      String?
+  rustdeskPassword String?
+  antivirus    String?
+  note         String?
+  lastSeenAt   DateTime?
+  isOnline     Boolean  @default(false)
+  pingMs       Int?
+  cpuPercent   Float?
+  ramPercent   Float?
+  appVersion   String?
+  pendingCommand String?
+
+  techLogs TechLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TechLog {
+  id             String   @id @default(cuid())
+  happenedAt     DateTime @default(now())
+  userId         String
+  computerId     String?
+  deviceId       String?
+  deviceType     String?
+  deviceName     String?
+  location       String?
+  priority       String?  @default("TRUNG_BINH")
+  issue          String
+  cause          String?
+  resolution     String
+  durationMin    Int?
+  cost           Float?
+  status         String   @default("HOAN_THANH")
+  technicianName String?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  computer Computer? @relation(fields: [computerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([computerId])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  happenedAt DateTime @default(now())
+  userId    String?
+  action    String
+  detail    String?
+  ip        String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}

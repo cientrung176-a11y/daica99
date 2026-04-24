@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: dai-ca-99-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: apps/server
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # Các biến sau phải đặt thủ công trong Render Dashboard → Environment
+      - key: DATABASE_URL
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false

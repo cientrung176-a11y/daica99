@@ -1,0 +1,15 @@
+{
+  "name": "dai-ca-99-bac-ninh",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @dai-ca/server & npm run dev -w @dai-ca/desktop",
+    "dev:server": "npm run dev -w @dai-ca/server",
+    "dev:desktop": "npm run dev -w @dai-ca/desktop",
+    "build": "npm run build -w @dai-ca/server && npm run build -w @dai-ca/desktop",
+    "build:desktop": "npm run build -w @dai-ca/desktop",
+    "build:server": "npm run build -w @dai-ca/server"
+  }
+}
