@@ -5,7 +5,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const isDev = process.env.ELECTRON_DEV === '1';
-const APP_VERSION = require('../package.json').version;
+const APP_VERSION = app.getVersion();
+process.env.APP_VERSION = APP_VERSION;
 
 let mainWindow = null;
 
@@ -182,6 +183,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
