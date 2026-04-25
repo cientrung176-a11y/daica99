@@ -15,6 +15,7 @@ import userRoutes from './routes/users.js';
 import exportRoutes from './routes/export.js';
 import dashboardRoutes from './routes/dashboard.js';
 import settingsRoutes from './routes/settings.js';
+import { seedDefaultUsers } from './seed.js';
 
 process.on('uncaughtException', (err) => {
   console.error('[UNCAUGHT EXCEPTION]', err);
@@ -45,6 +46,14 @@ async function main() {
     console.log('Database connected...');
   } catch (err) {
     console.error('[DB CONNECTION FAILED]', err);
+    process.exit(1);
+  }
+
+  // Seed default users nếu database chưa có user nào
+  try {
+    await seedDefaultUsers();
+  } catch (err) {
+    console.error('[SEED FAILED]', err);
     process.exit(1);
   }
 
