@@ -31,10 +31,21 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const { username, password } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user || !user.isActive) return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu.' });
+  if (!user) {
+    console.log(`[AUTH] Login failed: user "${username}" not found`);
+    return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu.' });
+  }
+  if (!user.isActive) {
+    console.log(`[AUTH] Login failed: user "${username}" inactive`);
+    return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu.' });
+  }
 
   const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu.' });
+  if (!ok) {
+    console.log(`[AUTH] Login failed: user "${username}" password mismatch (hash length=${user.passwordHash.length})`);
+    return res.status(401).json({ message: 'Sai tài khoản hoặc mật khẩu.' });
+  }
+  console.log(`[AUTH] Login success: ${username} (${user.role})`);
 
   const payload = { sub: user.id, username: user.username, fullName: user.fullName, role: user.role } as const;
 

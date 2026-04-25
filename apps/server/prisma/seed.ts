@@ -10,7 +10,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: { passwordHash: adminPassword, isActive: true },
     create: {
       username: 'admin',
       fullName: 'Quản trị viên',
@@ -21,7 +21,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: 'kythuat' },
-    update: {},
+    update: { passwordHash: techPassword, isActive: true },
     create: {
       username: 'kythuat',
       fullName: 'Kỹ thuật viên',
@@ -32,7 +32,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { username: 'xem' },
-    update: {},
+    update: { passwordHash: viewPassword, isActive: true },
     create: {
       username: 'xem',
       fullName: 'Chỉ xem',
