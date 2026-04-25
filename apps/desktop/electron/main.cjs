@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -7,6 +7,10 @@ const crypto = require('crypto');
 const isDev = process.env.ELECTRON_DEV === '1';
 const APP_VERSION = app.getVersion();
 process.env.APP_VERSION = APP_VERSION;
+
+// Debug logging
+const log = (...args) => console.log(`[${new Date().toISOString()}]`, ...args);
+const logError = (...args) => console.error(`[${new Date().toISOString()}]`, ...args);
 
 let mainWindow = null;
 
@@ -172,13 +176,32 @@ function setupUpdater() {
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
   const iconPath = path.join(__dirname, '..', 'public', 'icon.png');
+  const distPath = path.join(__dirname, '..', 'dist', 'index.html');
+  
+  log('Creating window...');
+  log('isDev:', isDev);
+  log('__dirname:', __dirname);
+  log('distPath exists:', fs.existsSync(distPath));
+  
+  if (!isDev && !fs.existsSync(distPath)) {
+    logError('FATAL: dist/index.html not found at', distPath);
+    dialog.showErrorBox(
+      'Lỗi cài đặt',
+      `Không tìm thấy frontend dist/index.html\nĐường dẫn: ${distPath}\nVui lòng cài đặt lại ứng dụng.`
+    );
+    app.quit();
+    return;
+  }
+
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     title: 'ĐẠI CA 99 BẮC NINH',
-    icon: require('fs').existsSync(iconPath) ? iconPath : undefined,
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
+    show: false,
+    backgroundColor: '#111827',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -187,11 +210,47 @@ function createWindow() {
     },
   });
 
+  // Load handler with extensive logging
   if (isDev) {
+    log('Loading DEV URL: http://localhost:5173');
     win.loadURL('http://localhost:5173');
   } else {
-    win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    log('Loading PROD file:', distPath);
+    win.loadFile(distPath);
   }
+
+  // Window events
+  win.webContents.on('did-start-loading', () => {
+    log('did-start-loading');
+  });
+
+  win.webContents.on('did-finish-load', () => {
+    log('did-finish-load - Window ready, showing now');
+    win.show();
+    win.focus();
+  });
+
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    logError('did-fail-load:', errorCode, errorDescription);
+    win.webContents.openDevTools();
+    dialog.showErrorBox(
+      'Lỗi tải ứng dụng',
+      `Không thể tải giao diện ứng dụng.\nLỗi: ${errorDescription}\nMã: ${errorCode}`
+    );
+  });
+
+  win.webContents.on('render-process-gone', (event, details) => {
+    logError('render-process-gone:', details);
+  });
+
+  win.webContents.on('unresponsive', () => {
+    logError('Window unresponsive');
+  });
+
+  win.webContents.on('console-message', (event, level, message) => {
+    const prefix = level === 0 ? '[VERBOSE]' : level === 1 ? '[INFO]' : level === 2 ? '[WARN]' : '[ERROR]';
+    log(`[Renderer]${prefix}`, message);
+  });
 
   // Mở / đóng DevTools thủ công — F12 hoặc Ctrl+Shift+I
   win.webContents.on('before-input-event', (_event, input) => {
@@ -208,6 +267,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  log('App ready, version:', APP_VERSION);
+  log('UserData:', app.getPath('userData'));
+  
   // IPC: renderer gửi cài đặt xuống để ghi settings.json
   ipcMain.handle('save-settings', (_event, settings) => {
     try {
