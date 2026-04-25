@@ -19,7 +19,7 @@ export default function UpdateBar() {
   useEffect(() => {
     if (!isElectron) return;
     api.onUpdater((data: UpdateEvent) => {
-      if (data.type === 'not-available' || data.type === 'checking') return;
+      if (data.type === 'not-available' || data.type === 'checking' || data.type === 'error') return;
       setEvent(data);
       setDismiss(false);
     });
