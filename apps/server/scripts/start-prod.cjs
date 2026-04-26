@@ -34,17 +34,22 @@ async function main() {
   }
   console.log('[STARTUP] Required env vars present');
 
-  // 1. Prisma migrate deploy
+  // 1. Generate Prisma client (runtime safety)
+  if (!run('npx prisma generate', 'Prisma generate')) {
+    process.exit(1);
+  }
+
+  // 2. Prisma migrate deploy
   if (!run('npx prisma migrate deploy', 'Prisma migrate deploy')) {
     process.exit(1);
   }
 
-  // 2. Seed
+  // 3. Seed
   if (!run('node scripts/seed.cjs', 'Seed default users')) {
     process.exit(1);
   }
 
-  // 3. Start server directly (not via npm start, to avoid npm error wrapping)
+  // 4. Start server directly (not via npm start, to avoid npm error wrapping)
   console.log('[STARTUP] Starting server...');
   const serverPath = path.resolve(__dirname, '..', 'dist', 'index.js');
   console.log('[STARTUP] Server entry:', serverPath);
