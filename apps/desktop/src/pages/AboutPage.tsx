@@ -11,38 +11,40 @@ export default function AboutPage() {
             <BrandLogo variant="full" size={130} />
           </div>
           <h3 className="text-xl font-bold mt-1">ĐẠI CA 99 BẮC NINH</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Phần mềm quản lý thiết bị phòng khám</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Có công mài sắt, có ngày nên kim</p>
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500">Phiên bản:</span>
-            <span className="font-medium">0.1.0</span>
+            <span className="font-medium">1.0.2</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Nền tảng:</span>
-            <span className="font-medium">Electron + React + TypeScript</span>
+            <span className="font-medium">Đi một ngày đàng, học một sàng khôn</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Backend:</span>
-            <span className="font-medium">Node.js + Express + PostgreSQL</span>
+            <span className="font-medium">Lửa thử vàng, gian nan thử sức</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Đồng bộ:</span>
-            <span className="font-medium">Socket.IO (thời gian thực)</span>
+            <span className="font-medium">Một cây làm chẳng nên non, ba cây chụm lại nên hòn núi cao</span>
           </div>
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <h4 className="font-medium mb-2">Chức năng chính</h4>
+          <h4 className="font-medium mb-2">Giá trị truyền đời</h4>
           <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-            <li>• Quản lý thiết bị y tế</li>
-            <li>• Quản lý máy tính phòng khám</li>
-            <li>• Giám sát trực tuyến / ngoại tuyến</li>
-            <li>• Điều khiển từ xa</li>
-            <li>• Nhật ký sửa chữa kỹ thuật</li>
-            <li>• Đồng bộ dữ liệu qua Internet</li>
-            <li>• Bảng điều khiển thống kê</li>
+            <li>• Có chí thì nên</li>
+            <li>• Thất bại là mẹ thành công</li>
+            <li>• Uống nước nhớ nguồn</li>
+            <li>• Tích tiểu thành đại</li>
+            <li>• Chậm mà chắc</li>
+            <li>• Học ăn học nói học gói học mở</li>
+            <li>• Tre già măng mọc</li>
+            <li>• Gần mực thì đen, gần đèn thì sáng</li>
+            <li>• Thuận vợ thuận chồng, tát biển Đông cũng cạn</li>
           </ul>
         </div>
       </div>

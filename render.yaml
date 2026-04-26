@@ -6,7 +6,7 @@ services:
     region: singapore
     rootDir: apps/server
     buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npx prisma migrate deploy && node scripts/seed.cjs && npm start
+    startCommand: node scripts/start-prod.cjs
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
