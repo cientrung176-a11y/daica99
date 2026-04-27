@@ -2,7 +2,16 @@ import { useEffect, useState, FormEvent } from 'react';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuthStore } from '../store/authStore';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, BookOpen, CheckCircle, RotateCcw } from 'lucide-react';
+
+type BorrowLog = {
+  id: string;
+  borrowerName: string;
+  borrowedAt: string;
+  returnedAt: string | null;
+  isReturned: boolean;
+  note: string | null;
+};
 
 type Device = {
   id: string;
@@ -55,6 +64,45 @@ export default function DevicesPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // ── Borrow log ──
+  const [borrowDevice, setBorrowDevice] = useState<Device | null>(null);
+  const [borrowLogs, setBorrowLogs] = useState<BorrowLog[]>([]);
+  const [borrowLoading, setBorrowLoading] = useState(false);
+  const [borrowerName, setBorrowerName] = useState('');
+  const [borrowNote, setBorrowNote] = useState('');
+  const [borrowSaving, setBorrowSaving] = useState(false);
+
+  const openBorrowModal = async (d: Device) => {
+    setBorrowDevice(d); setBorrowLoading(true); setBorrowLogs([]);
+    setBorrowerName(''); setBorrowNote('');
+    try {
+      const res = await api.get(`/borrow/${d.id}`);
+      setBorrowLogs(res.data.items);
+    } catch { /* ignore */ } finally { setBorrowLoading(false); }
+  };
+
+  const handleAddBorrow = async (e: FormEvent) => {
+    e.preventDefault(); if (!borrowDevice || !borrowerName.trim()) return;
+    setBorrowSaving(true);
+    try {
+      await api.post('/borrow', {
+        deviceId: borrowDevice.id,
+        borrowerName: borrowerName.trim(),
+        borrowedAt: new Date().toISOString(),
+        note: borrowNote || null,
+      });
+      const res = await api.get(`/borrow/${borrowDevice.id}`);
+      setBorrowLogs(res.data.items); setBorrowerName(''); setBorrowNote('');
+    } catch { /* ignore */ } finally { setBorrowSaving(false); }
+  };
+
+  const handleReturn = async (logId: string) => {
+    if (!borrowDevice) return;
+    await api.patch(`/borrow/${logId}/return`, {});
+    const res = await api.get(`/borrow/${borrowDevice.id}`);
+    setBorrowLogs(res.data.items);
+  };
 
   const fetchDevices = async () => {
     try {
@@ -188,7 +236,7 @@ export default function DevicesPage() {
                 <th className="text-left px-4 py-3 font-medium">Phòng ban</th>
                 <th className="text-left px-4 py-3 font-medium">Phụ trách</th>
                 <th className="text-left px-4 py-3 font-medium">Trạng thái</th>
-                {canEdit && <th className="text-right px-4 py-3 font-medium">Thao tác</th>}
+                <th className="text-right px-4 py-3 font-medium">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -204,21 +252,97 @@ export default function DevicesPage() {
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${st.color}`}>{st.label}</span>
                     </td>
-                    {canEdit && (
-                      <td className="px-4 py-3 text-right space-x-1">
-                        <button onClick={() => openEdit(d)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" title="Sửa">
-                          <Pencil size={15} />
+                    <td className="px-4 py-3 text-right space-x-1">
+                        <button onClick={() => openBorrowModal(d)} className="p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500" title="Lịch sử mượn">
+                          <BookOpen size={15} />
                         </button>
-                        <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" title="Xóa">
-                          <Trash2 size={15} />
-                        </button>
+                        {canEdit && <>
+                          <button onClick={() => openEdit(d)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500" title="Sửa">
+                            <Pencil size={15} />
+                          </button>
+                          <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500" title="Xóa">
+                            <Trash2 size={15} />
+                          </button>
+                        </>}
                       </td>
-                    )}
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ── Borrow Log Modal ── */}
+      {borrowDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <BookOpen size={18} className="text-blue-500" />
+                <div>
+                  <h3 className="font-semibold">Lịch sử mượn</h3>
+                  <p className="text-xs text-gray-500">{borrowDevice.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setBorrowDevice(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"><X size={16} /></button>
+            </div>
+
+            {/* Add borrow form */}
+            {canEdit && (
+              <form onSubmit={handleAddBorrow} className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/10 space-y-2">
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2">Ghi nhận mượn mới</p>
+                <div className="flex gap-2">
+                  <input required value={borrowerName} onChange={e => setBorrowerName(e.target.value)}
+                    placeholder="Tên người mượn *"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={borrowNote} onChange={e => setBorrowNote(e.target.value)}
+                    placeholder="Ghi chú"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <button type="submit" disabled={borrowSaving || !borrowerName.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
+                  <Plus size={14} /> {borrowSaving ? 'Đang lưu...' : 'Ghi nhận mượn'}
+                </button>
+              </form>
+            )}
+
+            {/* History list */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-2">
+              {borrowLoading ? (
+                <p className="text-center text-gray-400 py-6">Đang tải...</p>
+              ) : borrowLogs.length === 0 ? (
+                <p className="text-center text-gray-400 py-6">Chưa có lịch sử mượn nào.</p>
+              ) : borrowLogs.map(log => (
+                <div key={log.id} className={`flex items-start gap-3 p-3 rounded-xl border ${log.isReturned ? 'border-green-100 dark:border-green-900/30 bg-green-50 dark:bg-green-900/10' : 'border-amber-100 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10'}`}>
+                  <div className="mt-0.5">
+                    {log.isReturned
+                      ? <CheckCircle size={18} className="text-green-500" />
+                      : <RotateCcw size={18} className="text-amber-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">{log.borrowerName}</p>
+                    <p className="text-xs text-gray-500">Mượn: {new Date(log.borrowedAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                    {log.isReturned && log.returnedAt && (
+                      <p className="text-xs text-green-600">Trả: {new Date(log.returnedAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                    )}
+                    {log.note && <p className="text-xs text-gray-400 italic mt-0.5">{log.note}</p>}
+                  </div>
+                  {!log.isReturned && canEdit && (
+                    <button onClick={() => handleReturn(log.id)}
+                      className="shrink-0 px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium">
+                      Đã trả
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="px-6 pb-5 pt-2">
+              <button onClick={() => setBorrowDevice(null)}
+                className="w-full px-4 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Đóng</button>
+            </div>
+          </div>
         </div>
       )}
 

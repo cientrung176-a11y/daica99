@@ -25,6 +25,11 @@ type Computer = {
   note: string | null;
   rustDeskId: string | null;
   hasRustdesk: boolean;
+  isOnline: boolean;
+  lastSeenAt: string | null;
+  cpuPercent: number | null;
+  ramPercent: number | null;
+  pingMs: number | null;
 };
 
 type RevealedRustdesk = { rdId: string; rdPass: string; expiresAt: number };
@@ -255,12 +260,27 @@ export default function ComputersPage() {
               {/* Card Header */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${c.isOnline ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'}`}>
                     <Monitor size={20} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{c.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{c.name}</h3>
+                      <span className={`shrink-0 inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full ${c.isOnline ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${c.isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                        {c.isOnline ? 'Online' : 'Offline'}
+                      </span>
+                    </div>
                     {c.location && <p className="text-xs text-gray-500 truncate">{c.location}</p>}
+                    {c.isOnline && c.lastSeenAt && (
+                      <p className="text-xs text-gray-400">
+                        {c.pingMs != null && <span className="mr-2">🏓 {c.pingMs}ms</span>}
+                        Cập nhật: {new Date(c.lastSeenAt).toLocaleTimeString('vi-VN')}
+                      </p>
+                    )}
+                    {!c.isOnline && c.lastSeenAt && (
+                      <p className="text-xs text-gray-400">Lần cuối: {new Date(c.lastSeenAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0 ml-2">
@@ -269,6 +289,34 @@ export default function ComputersPage() {
                     {isAdmin && <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400" title="Xóa"><Trash2 size={14} /></button>}
                   </div>
               </div>
+
+              {/* CPU / RAM bars */}
+              {c.isOnline && (c.cpuPercent != null || c.ramPercent != null) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {c.cpuPercent != null && (
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>CPU</span><span className={c.cpuPercent > 85 ? 'text-red-500 font-semibold' : ''}>{c.cpuPercent.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${c.cpuPercent > 85 ? 'bg-red-500' : c.cpuPercent > 60 ? 'bg-amber-400' : 'bg-green-500'}`}
+                          style={{ width: `${c.cpuPercent}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  {c.ramPercent != null && (
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>RAM</span><span className={c.ramPercent > 85 ? 'text-red-500 font-semibold' : ''}>{c.ramPercent.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${c.ramPercent > 85 ? 'bg-red-500' : c.ramPercent > 60 ? 'bg-amber-400' : 'bg-blue-500'}`}
+                          style={{ width: `${c.ramPercent}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">

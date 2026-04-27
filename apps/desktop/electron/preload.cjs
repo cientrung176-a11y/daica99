@@ -5,8 +5,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   appVersion: process.env.APP_VERSION || '1.0.0',
 
-  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
-  openExternal: (url)      => ipcRenderer.invoke('open-external', url),
+  saveSettings:   (settings) => ipcRenderer.invoke('save-settings', settings),
+  openExternal:   (url)      => ipcRenderer.invoke('open-external', url),
+  getAutoStart:   ()         => ipcRenderer.invoke('get-auto-start'),
+  setAutoStart:   (enable)   => ipcRenderer.invoke('set-auto-start', enable),
 
   // Auto-updater
   updaterCheck:    ()   => ipcRenderer.invoke('updater-check'),

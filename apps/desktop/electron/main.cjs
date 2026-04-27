@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -13,6 +13,7 @@ const log = (...args) => console.log(`[${new Date().toISOString()}]`, ...args);
 const logError = (...args) => console.error(`[${new Date().toISOString()}]`, ...args);
 
 let mainWindow = null;
+let tray = null;
 
 // ─── Machine ID ──────────────────────────────────────────────────────────────
 function getMachineId() {
@@ -173,6 +174,42 @@ function setupUpdater() {
   }
 }
 
+// ─── System Tray ─────────────────────────────────────────────────────────────
+function createTray() {
+  const iconPath = path.join(__dirname, '..', 'public', 'icon.png');
+  const icon = fs.existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    : nativeImage.createEmpty();
+
+  tray = new Tray(icon);
+  tray.setToolTip('ĐẠI CA 99 BẮC NINH');
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Mở ứng dụng',
+      click: () => {
+        if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
+        else { createWindow(); }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Thoát hoàn toàn',
+      click: () => {
+        stopHeartbeat();
+        tray.destroy();
+        app.exit(0);
+      },
+    },
+  ]);
+
+  tray.setContextMenu(menu);
+  tray.on('double-click', () => {
+    if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
+    else { createWindow(); }
+  });
+}
+
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
   const iconPath = path.join(__dirname, '..', 'public', 'icon.png');
@@ -226,8 +263,11 @@ function createWindow() {
 
   win.webContents.on('did-finish-load', () => {
     log('did-finish-load - Window ready, showing now');
-    win.show();
-    win.focus();
+    const startHidden = app.getLoginItemSettings().wasOpenedAtLogin || process.argv.includes('--hidden');
+    if (!startHidden) {
+      win.show();
+      win.focus();
+    }
   });
 
   win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -263,6 +303,11 @@ function createWindow() {
 
   win.on('page-title-updated', (event) => { event.preventDefault(); });
 
+  win.on('close', (event) => {
+    event.preventDefault();
+    win.hide();
+  });
+
   mainWindow = win;
 }
 
@@ -282,14 +327,29 @@ app.whenReady().then(() => {
     shell.openExternal(url);
   });
 
+  ipcMain.handle('set-auto-start', (_event, enable) => {
+    app.setLoginItemSettings({
+      openAtLogin: enable,
+      openAsHidden: true,
+      args: ['--hidden'],
+    });
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.handle('get-auto-start', () => {
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true, args: ['--hidden'] });
+
+  createTray();
   createWindow();
   setupUpdater();
   startHeartbeat();
 });
 
 app.on('window-all-closed', () => {
-  stopHeartbeat();
-  if (process.platform !== 'darwin') app.quit();
+  // Không thoát khi đóng cửa sổ — app tiếp tục chạy nền trong tray
 });
 
 app.on('activate', () => {

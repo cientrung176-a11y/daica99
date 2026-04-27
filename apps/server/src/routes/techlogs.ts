@@ -59,6 +59,7 @@ const techLogSchema = z.object({
   cost:           z.number().min(0).optional().nullable(),
   status:         z.enum(['HOAN_THANH', 'DANG_XU_LY', 'CHO_XU_LY']).optional(),
   technicianName: z.string().optional().nullable(),
+  imageUrl:       z.string().optional().nullable(),
 });
 
 // POST /api/techlogs
@@ -87,6 +88,7 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Reques
       cost:           d.cost         ?? undefined,
       status:         d.status       ?? 'HOAN_THANH',
       technicianName: d.technicianName || req.user!.username,
+      imageUrl:       d.imageUrl       ?? undefined,
     },
     include: {
       user: { select: { username: true, fullName: true } },
@@ -124,6 +126,7 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'TECH']), async (req: Requ
       cost:           d.cost         ?? undefined,
       status:         d.status       ?? 'HOAN_THANH',
       technicianName: d.technicianName ?? undefined,
+      imageUrl:       d.imageUrl       ?? undefined,
     },
     include: {
       user: { select: { username: true, fullName: true } },

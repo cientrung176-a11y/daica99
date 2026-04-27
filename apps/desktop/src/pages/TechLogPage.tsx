@@ -1,7 +1,7 @@
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, useRef, FormEvent } from 'react';
 import {
   Wrench, Plus, Pencil, Trash2, Search, X, Download,
-  Monitor, Printer, Activity, FlaskConical, Camera, Wifi, Zap, Wind, MapPin,
+  Monitor, Printer, Activity, FlaskConical, Camera, Wifi, Zap, Wind, MapPin, ImagePlus, ZoomIn,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
@@ -15,6 +15,7 @@ type TechLog = {
   location: string | null; priority: string | null;
   computer: { id: string; name: string } | null;
   user: { username: string; fullName: string };
+  imageUrl: string | null;
 };
 type Computer = { id: string; name: string };
 
@@ -48,7 +49,7 @@ const SM: Record<string, { label: string; color: string }> = {
 const emptyForm = {
   happenedAt: '', deviceType: 'MAY_TINH', deviceName: '', computerId: '',
   location: '', priority: 'TRUNG_BINH', issue: '', cause: '',
-  resolution: '', durationMin: '', cost: '', status: 'HOAN_THANH', technicianName: '',
+  resolution: '', durationMin: '', cost: '', status: 'HOAN_THANH', technicianName: '', imageUrl: '',
 };
 const cls = 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 outline-none focus:ring-2 focus:ring-primary-500';
 
@@ -78,6 +79,9 @@ export default function TechLogPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [imgPreview, setImgPreview] = useState('');
+  const [viewImg, setViewImg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     try {
@@ -101,6 +105,7 @@ export default function TechLogPage() {
   const openCreate = () => {
     setEditingId(null);
     setForm({ ...emptyForm, happenedAt: new Date().toISOString().slice(0, 16), technicianName: user?.fullName || user?.username || '' });
+    setImgPreview('');
     setError(''); setShowModal(true);
   };
   const openEdit = (l: TechLog) => {
@@ -114,7 +119,9 @@ export default function TechLogPage() {
       durationMin: l.durationMin != null ? String(l.durationMin) : '',
       cost: l.cost != null ? String(l.cost) : '',
       status: l.status, technicianName: l.technicianName || '',
+      imageUrl: l.imageUrl || '',
     });
+    setImgPreview(l.imageUrl || '');
     setError(''); setShowModal(true);
   };
   const handleSave = async (e: FormEvent) => {
@@ -128,6 +135,7 @@ export default function TechLogPage() {
         durationMin: form.durationMin ? parseInt(form.durationMin) : null,
         cost: form.cost ? parseFloat(form.cost) : null,
         technicianName: form.technicianName || null,
+        imageUrl: imgPreview || null,
       };
       if (editingId) await api.put(`/techlogs/${editingId}`, d);
       else await api.post('/techlogs', d);
@@ -245,6 +253,12 @@ export default function TechLogPage() {
                       {log.durationMin && <span>⏱ {log.durationMin} phút</span>}
                       {log.cost != null && log.cost > 0 && <span>💰 {log.cost.toLocaleString('vi-VN')} đ</span>}
                     </div>
+                    {log.imageUrl && (
+                      <div className="mt-2">
+                        <img src={log.imageUrl} alt="ảnh sửa chữa" onClick={() => setViewImg(log.imageUrl)}
+                          className="h-20 rounded-lg object-cover border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -338,6 +352,31 @@ export default function TechLogPage() {
                   <input type="number" min="0" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} className={cls} />
                 </div>
               </div>
+              <div>
+                <label className="block text-xs font-medium mb-2">Ảnh kèm (tùy chọn)</label>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                      const dataUrl = ev.target?.result as string;
+                      setImgPreview(dataUrl);
+                    };
+                    reader.readAsDataURL(f);
+                  }} />
+                {imgPreview ? (
+                  <div className="flex items-start gap-3">
+                    <img src={imgPreview} alt="preview" className="h-24 rounded-lg object-cover border border-gray-200 dark:border-gray-600" />
+                    <button type="button" onClick={() => { setImgPreview(''); if (fileRef.current) fileRef.current.value = ''; }}
+                      className="text-xs text-red-500 hover:text-red-700 mt-1">Xóa ảnh</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-500 transition-colors">
+                    <ImagePlus size={16} /> Chọn ảnh
+                  </button>
+                )}
+              </div>
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Hủy</button>
                 <button type="submit" disabled={saving} className="px-5 py-2 text-sm rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-medium">
@@ -346,6 +385,20 @@ export default function TechLogPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── Image Lightbox ── */}
+      {viewImg && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewImg(null)}>
+          <img src={viewImg} alt="ảnh phóng to"
+            className="max-w-full max-h-full rounded-xl shadow-2xl object-contain"
+            onClick={e => e.stopPropagation()} />
+          <button onClick={() => setViewImg(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/40 text-white">
+            <X size={20} />
+          </button>
         </div>
       )}
     </div>

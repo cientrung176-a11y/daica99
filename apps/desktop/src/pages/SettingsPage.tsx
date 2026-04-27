@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [serverUrl, setServerUrl] = useState('');
   const [syncInterval, setSyncInterval] = useState('30');
   const [darkMode, setDarkMode] = useState(false);
+  const [autoStart, setAutoStart] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // PIN management
@@ -29,6 +30,8 @@ export default function SettingsPage() {
     setServerUrl(localStorage.getItem('serverUrl') || defaultUrl);
     setSyncInterval(localStorage.getItem('syncInterval') || '30');
     setDarkMode(document.documentElement.classList.contains('dark'));
+    const ea = (window as any).electronAPI;
+    if (ea?.getAutoStart) ea.getAutoStart().then((v: boolean) => setAutoStart(v));
   }, []);
 
   const handleSave = () => {
@@ -116,6 +119,25 @@ export default function SettingsPage() {
             />
             <span className="text-sm">Giao diện tối</span>
           </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoStart}
+              onChange={async (e) => {
+                const ea = (window as any).electronAPI;
+                if (ea?.setAutoStart) {
+                  const result = await ea.setAutoStart(e.target.checked);
+                  setAutoStart(result);
+                }
+              }}
+              className="w-4 h-4 rounded border-gray-300 text-primary-600"
+            />
+            <span className="text-sm">Tự khởi động cùng Windows</span>
+          </label>
+          <span className="text-xs text-gray-400">(chạy ẩn nền, gửi heartbeat tự động)</span>
         </div>
 
         <div className="pt-2 flex items-center gap-3">

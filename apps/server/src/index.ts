@@ -16,6 +16,7 @@ import exportRoutes from './routes/export.js';
 import dashboardRoutes from './routes/dashboard.js';
 import settingsRoutes from './routes/settings.js';
 import maintenanceRoutes from './routes/maintenance.js';
+import borrowRoutes from './routes/borrow.js';
 import { seedDefaultUsers } from './seed.js';
 
 process.on('uncaughtException', (err) => {
@@ -84,6 +85,7 @@ async function main() {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/settings', settingsRoutes);
   app.use('/api/maintenance', maintenanceRoutes);
+  app.use('/api/borrow', borrowRoutes);
 
   const server = http.createServer(app);
   const io = new Server(server, {

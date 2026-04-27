@@ -64,9 +64,24 @@ model Device {
   note         String?
   imageUrl     String?
   maintenance  MaintenanceSchedule[]
+  borrowLogs   BorrowLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model BorrowLog {
+  id           String    @id @default(cuid())
+  deviceId     String
+  borrowerName String
+  borrowedAt   DateTime  @default(now())
+  returnedAt   DateTime?
+  isReturned   Boolean   @default(false)
+  note         String?
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
 }
 
 model Computer {
@@ -120,6 +135,7 @@ model TechLog {
   cost           Float?
   status         String   @default("HOAN_THANH")
   technicianName String?
+  imageUrl       String?
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
   computer Computer? @relation(fields: [computerId], references: [id], onDelete: SetNull)
