@@ -38,12 +38,19 @@
     "vite": "^5.4.7",
     "wait-on": "^8.0.1"
   },
+  "author": {
+    "name": "CienNT"
+  },
   "build": {
     "appId": "com.daica99bacninh.app",
     "productName": "ĐẠI CA 99 BẮC NINH",
     "win": {
       "target": "nsis",
-      "icon": "public/icon.ico"
+      "icon": "public/icon.ico",
+      "legalTrademarks": "CienNT",
+      "signtoolOptions": {
+        "publisherName": "CienNT"
+      }
     },
     "nsis": {
       "oneClick": false,
