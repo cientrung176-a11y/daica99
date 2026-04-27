@@ -39,7 +39,13 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. Prisma migrate deploy
+  // 2a. Resolve any previously-failed migration so deploy can proceed
+  run(
+    'npx prisma migrate resolve --rolled-back 20260427220000_reset_admin_pin',
+    'Resolve rolled-back migration (safe to ignore if not applicable)'
+  );
+
+  // 2b. Prisma migrate deploy
   if (!run('npx prisma migrate deploy', 'Prisma migrate deploy')) {
     process.exit(1);
   }
