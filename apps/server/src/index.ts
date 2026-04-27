@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -21,12 +21,12 @@ import { seedDefaultUsers } from './seed.js';
 
 process.on('uncaughtException', (err) => {
   console.error('[UNCAUGHT EXCEPTION]', err);
-  process.exit(1);
+  // Do NOT exit — let the server keep running for other requests
 });
 
 process.on('unhandledRejection', (reason) => {
   console.error('[UNHANDLED REJECTION]', reason);
-  process.exit(1);
+  // Do NOT exit — transient DB/network errors should not kill the server
 });
 
 function isAllowedOrigin(origin: string | undefined): boolean {
@@ -55,8 +55,7 @@ async function main() {
   try {
     await seedDefaultUsers();
   } catch (err) {
-    console.error('[SEED FAILED]', err);
-    process.exit(1);
+    console.warn('[SEED WARNING] Seed failed (non-fatal, continuing):', err);
   }
 
   const app = express();
@@ -103,20 +102,32 @@ async function main() {
   });
 
   setInterval(async () => {
-    const threshold = new Date(Date.now() - 90_000);
-    const wentOffline = await prisma.computer.findMany({
-      where: { isOnline: true, lastSeenAt: { lt: threshold } },
-      select: { id: true, name: true, location: true },
-    });
-    if (wentOffline.length === 0) return;
-    await prisma.computer.updateMany({
-      where: { id: { in: wentOffline.map(c => c.id) } },
-      data: { isOnline: false },
-    });
-    for (const c of wentOffline) {
-      io.to('computers').emit('computer:offline', { id: c.id, name: c.name, location: c.location });
+    try {
+      const threshold = new Date(Date.now() - 90_000);
+      const wentOffline = await prisma.computer.findMany({
+        where: { isOnline: true, lastSeenAt: { lt: threshold } },
+        select: { id: true, name: true, location: true },
+      });
+      if (wentOffline.length === 0) return;
+      await prisma.computer.updateMany({
+        where: { id: { in: wentOffline.map(c => c.id) } },
+        data: { isOnline: false },
+      });
+      for (const c of wentOffline) {
+        io.to('computers').emit('computer:offline', { id: c.id, name: c.name, location: c.location });
+      }
+    } catch (err) {
+      console.error('[OFFLINE CHECK ERROR]', err);
     }
   }, 60_000);
+
+  // Global Express error handler — catches errors passed via next(err)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('[EXPRESS ERROR]', err);
+    const status = err.status || err.statusCode || 500;
+    res.status(status).json({ message: err.message || 'Internal server error' });
+  });
 
   const PORT = Number(process.env.PORT) || 4000;
   server.listen(PORT, '0.0.0.0', () => {
