@@ -13,9 +13,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     data: { isOnline: false },
   });
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const startOfMonth = new Date(now); startOfMonth.setDate(1); startOfMonth.setHours(0, 0, 0, 0);
+  const startOfWeek  = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay() + 1); startOfWeek.setHours(0, 0, 0, 0);
+  const in30Days     = new Date(now); in30Days.setDate(now.getDate() + 30);
 
   const [
     totalDevices,
@@ -24,7 +25,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     devicesError,
     devicesWarning,
     techLogThisMonth,
+    techLogThisWeek,
     techLogPending,
+    warrantyExpiringSoon,
+    devicesBorrowed,
   ] = await Promise.all([
     prisma.device.count(),
     prisma.computer.count(),
@@ -32,7 +36,15 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     prisma.device.count({ where: { status: 'LOI' } }),
     prisma.device.count({ where: { status: 'CANH_BAO' } }),
     prisma.techLog.count({ where: { happenedAt: { gte: startOfMonth } } }),
+    prisma.techLog.count({ where: { happenedAt: { gte: startOfWeek } } }),
     prisma.techLog.count({ where: { status: { in: ['DANG_XU_LY', 'CHO_XU_LY'] } } }),
+    prisma.device.findMany({
+      where: { warrantyUntil: { gte: now, lte: in30Days } },
+      select: { id: true, name: true, type: true, warrantyUntil: true, department: true },
+      orderBy: { warrantyUntil: 'asc' },
+      take: 10,
+    }),
+    (prisma as any).borrowLog.count({ where: { isReturned: false } }),
   ]);
 
   const byDepartment = await prisma.device.groupBy({
@@ -64,7 +76,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     devicesError,
     devicesWarning,
     techLogThisMonth,
+    techLogThisWeek,
     techLogPending,
+    warrantyExpiringSoon,
+    devicesBorrowed,
     byDepartment: byDepartment.map((x) => ({
       department: x.department ?? 'Chưa phân loại',
       count: x._count._all,
