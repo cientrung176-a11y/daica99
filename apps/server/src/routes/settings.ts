@@ -42,6 +42,12 @@ router.post('/admin-pin/verify', requireAuth, async (req: Request, res: Response
   return res.json({ ok: true });
 });
 
+// POST /api/settings/admin-pin/reset — Reset về mặc định 123456 (ADMIN only)
+router.post('/admin-pin/reset', requireAuth, requireRole(['ADMIN']), async (_req: Request, res: Response) => {
+  await prisma.setting.deleteMany({ where: { key: 'rustdesk_admin_pin' } });
+  return res.json({ ok: true, message: 'PIN đã được reset về mặc định 123456.' });
+});
+
 // PUT /api/settings/admin-pin — Đổi PIN (ADMIN only)
 router.put('/admin-pin', requireAuth, requireRole(['ADMIN']), async (req: Request, res: Response) => {
   const schema = z.object({

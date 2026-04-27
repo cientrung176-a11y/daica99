@@ -184,10 +184,25 @@ export default function SettingsPage() {
               <input type="checkbox" checked={showPins} onChange={e => setShowPins(e.target.checked)} className="rounded" />
               {showPins ? <EyeOff size={14} /> : <Eye size={14} />} Hiển thị PIN
             </label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <button type="submit" disabled={pinSaving}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium">
                 <ShieldCheck size={15} /> {pinSaving ? 'Đang lưu...' : 'Cập nhật PIN'}
+              </button>
+              <button type="button" disabled={pinSaving}
+                onClick={async () => {
+                  if (!confirm('Reset PIN về mặc định 123456?')) return;
+                  setPinSaving(true); setPinMsg(null);
+                  try {
+                    await api.post('/settings/admin-pin/reset', {});
+                    setPinMsg({ ok: true, text: 'Đã reset về 123456!' });
+                    setPinCurrent(''); setPinNew(''); setPinConfirm('');
+                  } catch {
+                    setPinMsg({ ok: false, text: 'Không thể reset.' });
+                  } finally { setPinSaving(false); }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium disabled:opacity-60">
+                Reset → 123456
               </button>
               {pinMsg && (
                 <span className={`text-sm font-medium ${pinMsg.ok ? 'text-green-600' : 'text-red-500'}`}>{pinMsg.text}</span>
