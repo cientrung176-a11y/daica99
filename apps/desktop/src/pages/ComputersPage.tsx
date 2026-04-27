@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, FormEvent } from 'react';
 import {
   Monitor, Plus, Pencil, Trash2, Search, X, Copy, Download, RefreshCw,
-  Eye, EyeOff, ShieldCheck, ExternalLink,
+  Eye, EyeOff, ShieldCheck, ExternalLink, QrCode, Printer,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuthStore } from '../store/authStore';
@@ -55,6 +56,7 @@ export default function ComputersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [copyMsg, setCopyMsg] = useState('');
+  const [qrModal, setQrModal] = useState<Computer | null>(null);
 
   // ── RustDesk: PIN modal ──
   const [pinModal, setPinModal] = useState<{ id: string; name: string } | null>(null);
@@ -165,7 +167,8 @@ export default function ComputersPage() {
   };
 
   const handleExport = () => {
-    const base = localStorage.getItem('serverUrl') || 'http://localhost:4000';
+    const base = localStorage.getItem('serverUrl')
+      || (import.meta.env.PROD ? 'https://daica99-api.onrender.com' : 'http://localhost:4000');
     const token = localStorage.getItem('accessToken') || '';
     const url = `${base}/api/export/computers`;
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
@@ -260,12 +263,11 @@ export default function ComputersPage() {
                     {c.location && <p className="text-xs text-gray-500 truncate">{c.location}</p>}
                   </div>
                 </div>
-                {canEdit && (
-                  <div className="flex gap-1 shrink-0 ml-2">
-                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-700" title="Sửa"><Pencil size={14} /></button>
+                <div className="flex gap-1 shrink-0 ml-2">
+                    <button onClick={() => setQrModal(c)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-emerald-600" title="QR Code"><QrCode size={14} /></button>
+                    {canEdit && <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-700" title="Sửa"><Pencil size={14} /></button>}
                     {isAdmin && <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400" title="Xóa"><Trash2 size={14} /></button>}
                   </div>
-                )}
               </div>
 
               {/* Info Grid */}
@@ -342,6 +344,60 @@ export default function ComputersPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── QR Code Modal ── */}
+      {qrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <QrCode size={18} className="text-emerald-600" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">QR Code thiết bị</h3>
+              </div>
+              <button onClick={() => setQrModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"><X size={16} /></button>
+            </div>
+            <div className="p-6 flex flex-col items-center gap-4" id="qr-print-area">
+              <div className="bg-white p-4 rounded-xl border-2 border-gray-200">
+                <QRCodeSVG
+                  value={[
+                    `Tên: ${qrModal.name}`,
+                    qrModal.ipInternal ? `IP: ${qrModal.ipInternal}` : '',
+                    qrModal.location   ? `Phòng: ${qrModal.location}` : '',
+                    qrModal.currentUser ? `Người dùng: ${qrModal.currentUser}` : '',
+                    qrModal.cpu        ? `CPU: ${qrModal.cpu}` : '',
+                    qrModal.ram        ? `RAM: ${qrModal.ram}` : '',
+                    qrModal.antivirus  ? `AV: ${qrModal.antivirus}` : '',
+                  ].filter(Boolean).join('\n')}
+                  size={180}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-gray-900 dark:text-gray-100">{qrModal.name}</p>
+                {qrModal.location && <p className="text-sm text-gray-500">{qrModal.location}</p>}
+                {qrModal.ipInternal && <p className="text-xs font-mono text-gray-400">{qrModal.ipInternal}</p>}
+              </div>
+            </div>
+            <div className="px-6 pb-5 flex gap-2">
+              <button onClick={() => setQrModal(null)}
+                className="flex-1 px-4 py-2 text-sm rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">Đóng</button>
+              <button
+                onClick={() => {
+                  const w = window.open('', '_blank', 'width=400,height=500')!;
+                  const svgEl = document.querySelector('#qr-print-area svg');
+                  const svgStr = svgEl ? svgEl.outerHTML : '';
+                  w.document.write(`<html><head><title>QR - ${qrModal.name}</title><style>body{font-family:sans-serif;text-align:center;padding:32px}svg{display:block;margin:0 auto 16px}h2{margin:0 0 4px}p{margin:2px;color:#666;font-size:13px}@media print{button{display:none}}</style></head><body>${svgStr}<h2>${qrModal.name}</h2>${qrModal.location ? `<p>${qrModal.location}</p>` : ''}${qrModal.ipInternal ? `<p style="font-family:monospace">${qrModal.ipInternal}</p>` : ''}<br><button onclick="window.print()">🖨️ In</button></body></html>`);
+                  w.document.close();
+                  setTimeout(() => w.print(), 300);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium">
+                <Printer size={14} /> In QR
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 {
   "name": "@dai-ca/desktop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -15,6 +15,7 @@
     "axios": "^1.7.7",
     "electron-updater": "^6.3.4",
     "lucide-react": "^0.441.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

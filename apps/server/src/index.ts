@@ -15,6 +15,7 @@ import userRoutes from './routes/users.js';
 import exportRoutes from './routes/export.js';
 import dashboardRoutes from './routes/dashboard.js';
 import settingsRoutes from './routes/settings.js';
+import maintenanceRoutes from './routes/maintenance.js';
 import { seedDefaultUsers } from './seed.js';
 
 process.on('uncaughtException', (err) => {
@@ -82,6 +83,7 @@ async function main() {
   app.use('/api/export', exportRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/maintenance', maintenanceRoutes);
 
   const server = http.createServer(app);
   const io = new Server(server, {
@@ -97,6 +99,22 @@ async function main() {
       socket.join(room);
     });
   });
+
+  setInterval(async () => {
+    const threshold = new Date(Date.now() - 90_000);
+    const wentOffline = await prisma.computer.findMany({
+      where: { isOnline: true, lastSeenAt: { lt: threshold } },
+      select: { id: true, name: true, location: true },
+    });
+    if (wentOffline.length === 0) return;
+    await prisma.computer.updateMany({
+      where: { id: { in: wentOffline.map(c => c.id) } },
+      data: { isOnline: false },
+    });
+    for (const c of wentOffline) {
+      io.to('computers').emit('computer:offline', { id: c.id, name: c.name, location: c.location });
+    }
+  }, 60_000);
 
   const PORT = Number(process.env.PORT) || 4000;
   server.listen(PORT, '0.0.0.0', () => {

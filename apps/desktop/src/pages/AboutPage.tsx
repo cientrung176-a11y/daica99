@@ -11,24 +11,24 @@ export default function AboutPage() {
             <BrandLogo variant="full" size={130} />
           </div>
           <h3 className="text-xl font-bold mt-1">ĐẠI CA 99 BẮC NINH</h3>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Có công mài sắt, có ngày nên kim</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Có kông mày sắt, có ngày lên cim</p>
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-500">Phiên bản:</span>
-            <span className="font-medium">1.0.2</span>
+            <span className="font-medium">1.0.3</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Nền tảng:</span>
             <span className="font-medium">Đi một ngày đàng, học một sàng khôn</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Backend:</span>
+            <span className="text-gray-500">cucak:</span>
             <span className="font-medium">Lửa thử vàng, gian nan thử sức</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Đồng bộ:</span>
+            <span className="text-gray-500">Thương em:</span>
             <span className="font-medium">Một cây làm chẳng nên non, ba cây chụm lại nên hòn núi cao</span>
           </div>
         </div>

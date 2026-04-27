@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  CalendarClock,
 } from 'lucide-react';
 import { useState } from 'react';
 import BrandLogo from './BrandLogo';
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/computers', label: 'Máy tính', icon: Monitor, roles: null },
   { to: '/tech-log', label: 'Nhật ký kỹ thuật', icon: Wrench, roles: null },
   { to: '/users', label: 'Người dùng', icon: Users, roles: ['ADMIN'] },
+  { to: '/maintenance', label: 'Lịch bảo trì', icon: CalendarClock, roles: null },
   { to: '/settings', label: 'Cài đặt', icon: Settings, roles: null },
   { to: '/about', label: 'Giới thiệu', icon: Info, roles: null },
 ];

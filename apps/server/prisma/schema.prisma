@@ -63,6 +63,7 @@ model Device {
   status       DeviceStatus @default(TOT)
   note         String?
   imageUrl     String?
+  maintenance  MaintenanceSchedule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,7 +96,8 @@ model Computer {
   appVersion   String?
   pendingCommand String?
 
-  techLogs TechLog[]
+  techLogs     TechLog[]
+  maintenance  MaintenanceSchedule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -133,6 +135,25 @@ model Setting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model MaintenanceSchedule {
+  id          String    @id @default(cuid())
+  title       String
+  computerId  String?
+  deviceId    String?
+  scheduledAt DateTime
+  repeatDays  Int?
+  note        String?
+  isDone      Boolean   @default(false)
+
+  computer Computer? @relation(fields: [computerId], references: [id], onDelete: SetNull)
+  device   Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scheduledAt])
 }
 
 model AuditLog {

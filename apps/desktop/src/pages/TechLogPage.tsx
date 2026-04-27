@@ -141,7 +141,8 @@ export default function TechLogPage() {
     await api.delete(`/techlogs/${id}`); fetchData();
   };
   const handleExport = () => {
-    const base = localStorage.getItem('serverUrl') || 'http://localhost:4000';
+    const base = localStorage.getItem('serverUrl')
+      || (import.meta.env.PROD ? 'https://daica99-api.onrender.com' : 'http://localhost:4000');
     const token = localStorage.getItem('accessToken') || '';
     fetch(`${base}/api/export/techlogs`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.blob()).then(blob => {

@@ -88,7 +88,7 @@ function getServerUrl() {
     const s = JSON.parse(raw);
     if (s && s.serverUrl) return s.serverUrl.replace(/\/$/, '');
   } catch { /* ignore */ }
-  return 'http://localhost:4000';
+  return isDev ? 'http://localhost:4000' : 'https://daica99-api.onrender.com';
 }
 
 // ─── Heartbeat sender ────────────────────────────────────────────────────────

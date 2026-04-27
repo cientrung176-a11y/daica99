@@ -1,11 +1,21 @@
 import { io, Socket } from 'socket.io-client';
 
-const BUILD_URL: string = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:4000';
+const PROD_URL = 'https://daica99-api.onrender.com';
+const DEV_URL  = 'http://localhost:4000';
+const BUILD_URL: string = import.meta.env.VITE_API_URL
+  ?? (import.meta.env.PROD ? PROD_URL : DEV_URL);
 
 function getBaseUrl(): string {
   try {
     const stored = localStorage.getItem('serverUrl');
-    if (stored && stored.startsWith('http')) return stored;
+    if (stored && stored.startsWith('http')) {
+      if (import.meta.env.PROD &&
+          (stored.includes('localhost') || stored.includes('127.0.0.1'))) {
+        localStorage.removeItem('serverUrl');
+      } else {
+        return stored;
+      }
+    }
   } catch {}
   return BUILD_URL;
 }

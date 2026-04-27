@@ -23,7 +23,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setClinicName(localStorage.getItem('clinicName') || 'Phòng khám Đại Ca 99');
-    setServerUrl(localStorage.getItem('serverUrl') || 'http://localhost:4000');
+    const defaultUrl = import.meta.env.PROD
+      ? 'https://daica99-api.onrender.com'
+      : 'http://localhost:4000';
+    setServerUrl(localStorage.getItem('serverUrl') || defaultUrl);
     setSyncInterval(localStorage.getItem('syncInterval') || '30');
     setDarkMode(document.documentElement.classList.contains('dark'));
   }, []);

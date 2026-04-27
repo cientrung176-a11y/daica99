@@ -113,7 +113,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Phiên bản 0.1.0
+          Phiên bản 1.0.3
         </p>
         </div>
       </div>
