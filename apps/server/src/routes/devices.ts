@@ -7,26 +7,35 @@ import { requireAuth, requireRole } from '../auth/middleware.js';
 const router = Router();
 
 router.get('/', requireAuth, async (req: Request, res: Response) => {
-  const q = typeof req.query.q === 'string' ? req.query.q : '';
-  const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+  const q          = typeof req.query.q         === 'string' ? req.query.q         : '';
+  const status     = typeof req.query.status    === 'string' ? req.query.status    : undefined;
+  const borrowing  = req.query.borrowing === 'true';
 
   const where: any = {};
   if (q) {
     where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { type: { contains: q, mode: 'insensitive' } },
-      { brand: { contains: q, mode: 'insensitive' } },
-      { model: { contains: q, mode: 'insensitive' } },
-      { serial: { contains: q, mode: 'insensitive' } },
+      { name:       { contains: q, mode: 'insensitive' } },
+      { type:       { contains: q, mode: 'insensitive' } },
+      { brand:      { contains: q, mode: 'insensitive' } },
+      { model:      { contains: q, mode: 'insensitive' } },
+      { serial:     { contains: q, mode: 'insensitive' } },
       { department: { contains: q, mode: 'insensitive' } },
-      { owner: { contains: q, mode: 'insensitive' } },
+      { owner:      { contains: q, mode: 'insensitive' } },
     ];
   }
   if (status) where.status = status;
+  if (borrowing) where.borrowLogs = { some: { isReturned: false } };
 
-  const items = await prisma.device.findMany({
+  const items = await (prisma as any).device.findMany({
     where,
     orderBy: { updatedAt: 'desc' },
+    include: {
+      borrowLogs: {
+        where: { isReturned: false },
+        orderBy: { borrowedAt: 'desc' },
+        take: 1,
+      },
+    },
   });
 
   return res.json({ items });

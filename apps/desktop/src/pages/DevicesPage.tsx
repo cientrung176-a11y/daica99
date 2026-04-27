@@ -13,6 +13,8 @@ type BorrowLog = {
   note: string | null;
 };
 
+type ActiveBorrow = { id: string; borrowerName: string; borrowedAt: string };
+
 type Device = {
   id: string;
   name: string;
@@ -27,6 +29,7 @@ type Device = {
   status: string;
   note: string | null;
   imageUrl: string | null;
+  borrowLogs: ActiveBorrow[];
 };
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -58,6 +61,7 @@ export default function DevicesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterBorrowing, setFilterBorrowing] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -92,16 +96,21 @@ export default function DevicesPage() {
         borrowedAt: new Date().toISOString(),
         note: borrowNote || null,
       });
-      const res = await api.get(`/borrow/${borrowDevice.id}`);
-      setBorrowLogs(res.data.items); setBorrowerName(''); setBorrowNote('');
+      const borrowRes = await api.get(`/borrow/${borrowDevice.id}`);
+      setBorrowLogs(borrowRes.data.items);
+      await fetchDevices();
+      setBorrowerName(''); setBorrowNote('');
     } catch { /* ignore */ } finally { setBorrowSaving(false); }
   };
 
   const handleReturn = async (logId: string) => {
     if (!borrowDevice) return;
     await api.patch(`/borrow/${logId}/return`, {});
-    const res = await api.get(`/borrow/${borrowDevice.id}`);
-    setBorrowLogs(res.data.items);
+    const [borrowRes] = await Promise.all([
+      api.get(`/borrow/${borrowDevice.id}`),
+      fetchDevices(),
+    ]);
+    setBorrowLogs(borrowRes.data.items);
   };
 
   const fetchDevices = async () => {
@@ -109,6 +118,7 @@ export default function DevicesPage() {
       const params: any = {};
       if (search) params.q = search;
       if (filterStatus) params.status = filterStatus;
+      if (filterBorrowing) params.borrowing = 'true';
       const res = await api.get('/devices', { params });
       setItems(res.data.items);
     } catch {
@@ -120,7 +130,7 @@ export default function DevicesPage() {
 
   useEffect(() => {
     fetchDevices();
-  }, [search, filterStatus]);
+  }, [search, filterStatus, filterBorrowing]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -218,6 +228,16 @@ export default function DevicesPage() {
           <option value="CANH_BAO">Cảnh báo</option>
           <option value="BAO_TRI">Bảo trì</option>
         </select>
+        <button
+          onClick={() => setFilterBorrowing(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
+            filterBorrowing
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-amber-50'
+          }`}
+        >
+          <RotateCcw size={14} /> Đang mượn
+        </button>
       </div>
 
       {/* Table */}
@@ -244,7 +264,14 @@ export default function DevicesPage() {
                 const st = statusMap[d.status] || { label: d.status, color: 'bg-gray-100 text-gray-700' };
                 return (
                   <tr key={d.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-4 py-3 font-medium">{d.name}</td>
+                    <td className="px-4 py-3">
+                        <span className="font-medium">{d.name}</span>
+                        {d.borrowLogs.length > 0 && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <RotateCcw size={10} /> Đang mượn: {d.borrowLogs[0].borrowerName}
+                          </span>
+                        )}
+                      </td>
                     <td className="px-4 py-3">{d.type}</td>
                     <td className="px-4 py-3">{d.brand || '—'}</td>
                     <td className="px-4 py-3">{d.department || '—'}</td>
