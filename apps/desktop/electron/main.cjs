@@ -340,8 +340,6 @@ app.whenReady().then(() => {
     return app.getLoginItemSettings().openAtLogin;
   });
 
-  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true, args: ['--hidden'] });
-
   createTray();
   createWindow();
   setupUpdater();
