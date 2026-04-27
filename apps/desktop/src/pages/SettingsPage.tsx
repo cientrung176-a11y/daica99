@@ -127,10 +127,12 @@ export default function SettingsPage() {
               type="checkbox"
               checked={autoStart}
               onChange={async (e) => {
+                const newVal = e.target.checked;
+                setAutoStart(newVal);
                 const ea = (window as any).electronAPI;
                 if (ea?.setAutoStart) {
-                  const result = await ea.setAutoStart(e.target.checked);
-                  setAutoStart(result);
+                  const result = await ea.setAutoStart(newVal);
+                  setAutoStart(result ?? newVal);
                 }
               }}
               className="w-4 h-4 rounded border-gray-300 text-primary-600"

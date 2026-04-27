@@ -328,15 +328,27 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('set-auto-start', (_event, enable) => {
-    app.setLoginItemSettings({
-      openAtLogin: enable,
-      openAsHidden: true,
-      args: ['--hidden'],
-    });
-    return app.getLoginItemSettings().openAtLogin;
+    try {
+      app.setLoginItemSettings({ openAtLogin: enable, openAsHidden: true, args: ['--hidden'] });
+      // Persist to settings.json as well for reliability
+      const sf = path.join(app.getPath('userData'), 'settings.json');
+      try {
+        const s = fs.existsSync(sf) ? JSON.parse(fs.readFileSync(sf, 'utf8')) : {};
+        s.autoStart = enable;
+        fs.writeFileSync(sf, JSON.stringify(s, null, 2), 'utf8');
+      } catch { /* ignore */ }
+    } catch { /* ignore */ }
+    return enable;
   });
 
   ipcMain.handle('get-auto-start', () => {
+    try {
+      const sf = path.join(app.getPath('userData'), 'settings.json');
+      if (fs.existsSync(sf)) {
+        const s = JSON.parse(fs.readFileSync(sf, 'utf8'));
+        if (typeof s.autoStart === 'boolean') return s.autoStart;
+      }
+    } catch { /* ignore */ }
     return app.getLoginItemSettings().openAtLogin;
   });
 
